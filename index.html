@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a5276">
+<title>Azul · La Porra de la Paletilla</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Azul Tracker&quot;,&quot;short_name&quot;:&quot;Azul&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23f5f0e8&quot;,&quot;theme_color&quot;:&quot;%231a5276&quot;}">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%;overflow-y:scroll}
+  body{
+    font-family:'DM Sans','Segoe UI',sans-serif;
+    background:linear-gradient(135deg,#f5f0e8 0%,#e8e0d0 100%);
+    min-height:100%;
+    color:#2c3e50;
+    -webkit-tap-highlight-color:transparent;
+  }
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+
+  .container{max-width:520px;margin:0 auto;padding:16px 12px 110px}
+
+  /* Background texture */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(circle at 20% 30%,rgba(26,82,118,.04) 0%,transparent 50%),
+      radial-gradient(circle at 80% 70%,rgba(212,160,23,.04) 0%,transparent 50%);
+  }
+  .container{position:relative;z-index:1}
+
+  /* Header */
+  .header{text-align:center;margin-bottom:24px;padding-top:8px}
+  .header h1{
+    font-family:'Playfair Display',Georgia,serif;font-size:36px;font-weight:900;
+    color:#1a5276;letter-spacing:-.02em;line-height:1.1;
+  }
+  .tiles{display:flex;justify-content:center;gap:4px;margin:6px 0}
+  .tile{width:10px;height:10px;border-radius:2px}
+  .header .sub{font-size:13px;color:#7f8c8d;font-weight:500}
+
+  /* Sync indicator */
+  .sync{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;color:#7f8c8d;margin-top:4px;
+  }
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:#48c9b0}
+  .sync-dot.off{background:#e74c3c}
+  .sync-dot.connecting{background:#f39c12;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* Nav */
+  .nav{display:flex;gap:0;margin-bottom:20px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .nav button{
+    flex:1;padding:10px 4px;border:none;border-radius:10px;font-size:13px;
+    font-weight:500;font-family:inherit;cursor:pointer;transition:all .2s;
+    background:transparent;color:#7f8c8d;
+  }
+  .nav button.active{background:#1a5276;color:#fff;font-weight:700}
+
+  /* Cards */
+  .card{background:#fff;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+  .card-muted{background:#faf8f4}
+
+  .section-title{
+    font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:700;
+    color:#2c3e50;margin-bottom:12px;
+  }
+
+  /* Big buttons */
+  .mode-btns{display:flex;gap:10px}
+  .mode-btn{
+    flex:1;padding:20px 12px;border:none;border-radius:12px;color:#fff;
+    font-family:'Playfair Display',Georgia,serif;font-weight:700;cursor:pointer;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .mode-btn:active{transform:scale(.97)}
+  .mode-btn .num{font-size:22px;display:block}
+  .mode-btn .lbl{font-size:11px;opacity:.85}
+  .mode-3{background:#2874a6;box-shadow:0 3px 12px #2874a640}
+  .mode-4{background:#1e8449;box-shadow:0 3px 12px #1e844940}
+
+  /* Score inputs */
+  .score-row{
+    display:flex;align-items:center;gap:12px;padding:10px 14px;
+    border-radius:10px;margin-bottom:8px;
+  }
+  .score-row .name{flex:1;font-weight:600;font-size:15px}
+  .score-row input{
+    width:72px;padding:10px 12px;border-radius:8px;font-size:18px;font-weight:700;
+    text-align:center;font-family:'Playfair Display',Georgia,serif;color:#2c3e50;
+    outline:none;background:#fff;
+  }
+
+  /* Team config */
+  .teams-box{margin-bottom:20px;padding:14px;background:#f8f6f0;border-radius:10px}
+  .teams-box .label{font-size:12px;font-weight:600;color:#7f8c8d;margin-bottom:10px}
+  .teams-grid{display:flex;gap:10px}
+  .teams-grid>div{flex:1}
+  .team-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .team-player{
+    display:block;width:100%;margin-bottom:4px;padding:8px 10px;
+    border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:inherit;text-align:left;
+  }
+
+  /* Save button */
+  .save-btn{
+    width:100%;margin-top:16px;padding:14px;border:none;border-radius:10px;
+    font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
+    color:#fff;transition:all .2s;
+  }
+  .save-btn.ok{background:#1a5276;box-shadow:0 3px 12px #1a527640}
+  .save-btn.disabled{background:#d5d5d5;cursor:default}
+
+  /* Cancel */
+  .cancel-btn{
+    border:none;background:#f0f0f0;border-radius:8px;padding:6px 14px;
+    font-size:12px;font-weight:600;cursor:pointer;color:#7f8c8d;font-family:inherit;
+  }
+
+  /* Game cards */
+  .badge{
+    display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;
+    font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  }
+  .badge-3{background:#2874a618;color:#2874a6}
+  .badge-4{background:#1e844918;color:#1e8449}
+
+  .game-player{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px}
+  .game-player .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .game-player .pname{flex:1;font-size:14px}
+  .game-player .pscore{
+    font-size:18px;font-weight:700;font-family:'Playfair Display',Georgia,serif;
+    min-width:36px;text-align:right;
+  }
+  .game-winner{background:#1e844908}
+  .game-loser{background:#c0392b06}
+
+  .team-score-tag{
+    display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;margin-bottom:8px;
+  }
+
+  .delete-btn{border:none;background:none;font-size:11px;color:#7f8c8d;cursor:pointer;font-family:inherit;padding:4px 8px}
+  .confirm-yes{
+    border:none;background:#c0392b;color:#fff;border-radius:6px;padding:4px 12px;
+    font-size:11px;font-weight:600;cursor:pointer;margin-right:6px;font-family:inherit;
+  }
+  .confirm-no{
+    border:none;background:#eee;border-radius:6px;padding:4px 12px;
+    font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#7f8c8d;
+  }
+
+  /* Stats */
+  .stat-avatar{
+    width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;color:#fff;font-family:'Playfair Display',Georgia,serif;
+    font-weight:900;font-size:20px;
+  }
+  .stat-bar{margin-top:12px;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+  .stat-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+  .mini-stat .val{font-size:20px;font-weight:700;font-family:'Playfair Display',Georgia,serif}
+  .mini-stat .lbl{font-size:10px;color:#7f8c8d;font-weight:500}
+
+  /* Big numbers */
+  .big-num{font-size:28px;font-weight:700;font-family:'Playfair Display',Georgia,serif}
+
+  /* Paletilla */
+  .pal-player{padding:14px 16px;border-radius:12px;margin-bottom:10px}
+  .pal-player.top{background:#c0392b08;border:2px solid #c0392b25}
+  .pal-player.rest{background:#fafafa;border:2px solid transparent}
+  .pal-bar{height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;margin-top:6px}
+  .pal-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+  .reset-btn{
+    width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+  }
+  .reset-outline{border:2px solid #c0392b30;background:transparent;color:#c0392b}
+  .reset-danger{border:none;background:#c0392b;color:#fff;padding:10px 24px;width:auto;margin-right:8px}
+  .reset-cancel{border:none;background:#eee;color:#7f8c8d;padding:10px 24px;width:auto}
+
+  .empty{text-align:center;color:#7f8c8d;font-size:14px;padding:20px}
+
+  /* Loading screen */
+  .loading{display:flex;justify-content:center;align-items:center;height:100vh}
+  .loading span{font-family:'Playfair Display',Georgia,serif;font-size:20px;color:#1a5276}
+
+  /* Animations */
+  .card{animation:fadeUp .3s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div id="app" class="container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ─── Firebase Config ────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyByuQTGzRG40fagc-6Ce55k8aGczTIDQF8",
+  authDomain: "azul-paletilla.firebaseapp.com",
+  databaseURL: "https://azul-paletilla-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "azul-paletilla",
+  storageBucket: "azul-paletilla.firebasestorage.app",
+  messagingSenderId: "731980312988",
+  appId: "1:731980312988:web:435ee7782c20fd51945859"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+const gamesRef = ref(db, "games");
+
+// ─── Constants ──────────────────────────────────────────
+const PLAYERS_3 = ["Xose","Noelia","Pako"];
+const PLAYERS_4 = ["Xose","Noelia","Pako","Miguel"];
+const PCOLORS = {Xose:"#2874a6",Noelia:"#c0392b",Pako:"#d4a017",Miguel:"#1e8449"};
+
+// ─── State ──────────────────────────────────────────────
+let state = {
+  games: [],
+  view: "home",
+  newGame: null,
+  confirmDelete: null,
+  confirmReset: false,
+  connected: false,
+  loaded: false
+};
+
+function setState(patch) {
+  Object.assign(state, patch);
+  render();
+}
+
+// ─── Firebase Sync ──────────────────────────────────────
+onValue(ref(db, ".info/connected"), snap => {
+  setState({ connected: snap.val() === true });
+});
+
+onValue(gamesRef, snap => {
+  const val = snap.val();
+  const arr = val ? Object.entries(val).map(([k,v]) => ({...v, _key:k})).sort((a,b) => b.date.localeCompare(a.date)) : [];
+  setState({ games: arr, loaded: true });
+});
+
+function saveGame(game) {
+  const key = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  set(ref(db, "games/" + key), game);
+}
+
+function deleteGame(key) {
+  remove(ref(db, "games/" + key));
+}
+
+function resetAll() {
+  remove(gamesRef);
+}
+
+// ─── Helpers ────────────────────────────────────────────
+function getStats() {
+  const s = {};
+  PLAYERS_4.forEach(p => { s[p] = {played:0,wins:0,losses:0,totalScore:0,bestScore:0}; });
+  state.games.forEach(g => {
+    if (g.mode === "3free") {
+      const sorted = Object.entries(g.scores).sort((a,b) => b[1]-a[1]);
+      sorted.forEach(([name,score],i) => {
+        s[name].played++;
+        s[name].totalScore += score;
+        if (score > s[name].bestScore) s[name].bestScore = score;
+        if (i===0) s[name].wins++;
+        if (i===sorted.length-1) s[name].losses++;
+      });
+    } else if (g.mode === "2v2") {
+      const t1 = (g.scores[g.team1[0]]||0)+(g.scores[g.team1[1]]||0);
+      const t2 = (g.scores[g.team2[0]]||0)+(g.scores[g.team2[1]]||0);
+      const winners = t1>=t2 ? g.team1 : g.team2;
+      [...g.team1,...g.team2].forEach(name => {
+        const sc = g.scores[name]||0;
+        s[name].played++;
+        s[name].totalScore += sc;
+        if (sc > s[name].bestScore) s[name].bestScore = sc;
+        if (winners.includes(name)) s[name].wins++;
+        else s[name].losses++;
+      });
+    }
+  });
+  return s;
+}
+
+function getPaletilla() {
+  const losses = {Xose:0,Noelia:0,Pako:0};
+  const played = {Xose:0,Noelia:0,Pako:0};
+  state.games.forEach(g => {
+    if (g.mode === "3free") {
+      const sorted = Object.entries(g.scores).sort((a,b) => b[1]-a[1]);
+      const loser = sorted[sorted.length-1][0];
+      sorted.forEach(([n]) => { played[n]++; });
+      if (losses[loser] !== undefined) losses[loser]++;
+    }
+  });
+  const total = Object.values(losses).reduce((a,b)=>a+b,0);
+  const pct = {};
+  PLAYERS_3.forEach(p => { pct[p] = total > 0 ? Math.round(losses[p]/total*100) : 0; });
+  return { losses, pct, total, played };
+}
+
+function esc(s) { const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+// ─── Render ─────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const app = document.getElementById("app");
+
+function render() {
+  if (!state.loaded) {
+    app.innerHTML = `<div class="loading"><span>Cargando...</span></div>`;
+    return;
+  }
+  app.innerHTML = renderHeader() + renderNav() + renderView();
+  bindEvents();
+}
+
+function renderHeader() {
+  const colors = ["#2874a6","#d4a017","#c0392b","#1a1a2e","#48c9b0"];
+  const dots = state.connected
+    ? '<span class="sync-dot"></span> Sincronizado'
+    : '<span class="sync-dot off"></span> Sin conexión';
+  return `
+    <div class="header">
+      <h1>Azul</h1>
+      <div class="tiles">
+        ${colors.map((c,i) => `<div class="tile" style="background:${c};transform:rotate(${i*15-30}deg)"></div>`).join("")}
+      </div>
+      <div class="sub">La Porra de la Paletilla</div>
+      <div class="sync">${dots}</div>
+    </div>`;
+}
+
+function renderNav() {
+  const tabs = [{id:"home",l:"Inicio"},{id:"history",l:"Partidas"},{id:"stats",l:"Stats"},{id:"paletilla",l:"Paletilla"}];
+  return `<div class="nav">${tabs.map(t =>
+    `<button data-nav="${t.id}" class="${state.view===t.id?'active':''}">${t.l}</button>`
+  ).join("")}</div>`;
+}
+
+function renderView() {
+  if (state.newGame) return renderNewGame();
+  switch(state.view) {
+    case "home": return renderHome();
+    case "history": return renderHistory();
+    case "stats": return renderStats();
+    case "paletilla": return renderPaletilla();
+  }
+}
+
+function renderHome() {
+  const g = state.games;
+  const g3 = g.filter(x=>x.mode==="3free").length;
+  const g4 = g.filter(x=>x.mode==="2v2").length;
+  let quick = "";
+  if (g.length > 0) {
+    quick = `<div class="card">
+      <h2 class="section-title">Resumen rápido</h2>
+      <div style="display:flex;justify-content:space-around;text-align:center">
+        <div><div class="big-num" style="color:#1a5276">${g.length}</div><div style="font-size:11px;color:#7f8c8d">Partidas</div></div>
+        <div><div class="big-num" style="color:#d4a017">${g3}</div><div style="font-size:11px;color:#7f8c8d">Libre (3)</div></div>
+        <div><div class="big-num" style="color:#1e8449">${g4}</div><div style="font-size:11px;color:#7f8c8d">Equipos</div></div>
+      </div>
+    </div>`;
+  }
+  return `
+    <div class="card">
+      <h2 class="section-title">Nueva partida</h2>
+      <p style="font-size:13px;color:#7f8c8d;margin-bottom:16px">Elige el modo de juego</p>
+      <div class="mode-btns">
+        <button class="mode-btn mode-3" data-mode="3free"><span class="num">3</span><span class="lbl">Libre</span></button>
+        <button class="mode-btn mode-4" data-mode="2v2"><span class="num">2v2</span><span class="lbl">Equipos</span></button>
+      </div>
+    </div>
+    ${quick}
+    <div class="card">
+      <h2 class="section-title">Reglas de la Porra</h2>
+      <div style="font-size:13px;line-height:1.6">
+        <p style="margin-bottom:8px">Cada derrota en partida de 3 suma <strong>1 punto de deuda</strong>. El reparto del coste de la paletilla es proporcional a las derrotas.</p>
+        <p style="margin-bottom:8px">Ejemplo: Pako pierde 5, Noelia 3, Xose 2 → Pako 50%, Noelia 30%, Xose 20%.</p>
+        <p>Las partidas 2v2 con Miguel son por diversión y <strong>no cuentan</strong> para la porra.</p>
+      </div>
+    </div>`;
+}
+
+function renderNewGame() {
+  const g = state.newGame;
+  const players = g.mode === "3free" ? PLAYERS_3 : PLAYERS_4;
+  let teamHtml = "";
+  if (g.mode === "2v2") {
+    teamHtml = `
+      <div class="teams-box">
+        <div class="label">Equipos (toca un nombre para cambiarlo)</div>
+        <div class="teams-grid">
+          <div>
+            <div class="team-label" style="color:#2874a6">Equipo 1</div>
+            ${g.team1.map(p => `<button class="team-player" data-swap="${p}" data-from="team1" style="border:2px solid ${PCOLORS[p]};background:${PCOLORS[p]}15;color:${PCOLORS[p]}">${p}</button>`).join("")}
+          </div>
+          <div>
+            <div class="team-label" style="color:#1e8449">Equipo 2</div>
+            ${g.team2.map(p => `<button class="team-player" data-swap="${p}" data-from="team2" style="border:2px solid ${PCOLORS[p]};background:${PCOLORS[p]}15;color:${PCOLORS[p]}">${p}</button>`).join("")}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const rows = players.map(p => `
+    <div class="score-row" style="background:${PCOLORS[p]}08;border-left:4px solid ${PCOLORS[p]}">
+      <span class="name">${p}</span>
+      <input type="number" inputmode="numeric" placeholder="Pts" data-player="${p}"
+        value="${g.scores[p]}" style="border:2px solid ${PCOLORS[p]}30">
+    </div>`).join("");
+
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 class="section-title" style="margin-bottom:0">${g.mode==="3free"?"Partida libre (3)":"Partida 2v2"}</h2>
+        <button class="cancel-btn" data-action="cancel-new">Cancelar</button>
+      </div>
+      ${teamHtml}
+      <div>${rows}</div>
+      <button class="save-btn ${players.every(p=>g.scores[p]!==""&&!isNaN(Number(g.scores[p])))?"ok":"disabled"}" data-action="save-game">
+        Guardar partida
+      </button>
+    </div>`;
+}
+
+function renderHistory() {
+  if (state.games.length === 0) return `<div class="card"><p class="empty">Aún no hay partidas registradas</p></div>`;
+  return state.games.map((g,idx) => {
+    const d = new Date(g.date);
+    const ds = d.toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"});
+    const ts = d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+    const sorted = Object.entries(g.scores).sort((a,b)=>b[1]-a[1]);
+
+    let teamTags = "";
+    if (g.mode === "2v2") {
+      const t1s = (g.scores[g.team1[0]]||0)+(g.scores[g.team1[1]]||0);
+      const t2s = (g.scores[g.team2[0]]||0)+(g.scores[g.team2[1]]||0);
+      teamTags = `
+        <div style="margin-bottom:8px">
+          <span class="team-score-tag" style="color:#2874a6;background:#2874a610">Eq1: ${g.team1.join(" + ")} = ${t1s}</span>
+          <span class="team-score-tag" style="color:#1e8449;background:#1e844910">Eq2: ${g.team2.join(" + ")} = ${t2s}</span>
+        </div>`;
+    }
+
+    const isDeleting = state.confirmDelete === g._key;
+    const delHtml = isDeleting
+      ? `<span style="font-size:12px"><span style="color:#7f8c8d;margin-right:8px">¿Seguro?</span><button class="confirm-yes" data-delconfirm="${g._key}">Sí</button><button class="confirm-no" data-delcancel>No</button></span>`
+      : `<button class="delete-btn" data-delask="${g._key}">Eliminar</button>`;
+
+    const rows = sorted.map(([name,score],i) => {
+      const isW = i===0, isL = i===sorted.length-1;
+      return `<div class="game-player ${isW?'game-winner':''} ${isL?'game-loser':''}">
+        <div class="dot" style="background:${PCOLORS[name]}"></div>
+        <span class="pname" style="font-weight:${isW?700:500}">${name}</span>
+        ${isW?'<span style="font-size:12px">👑</span>':''}
+        ${isL && g.mode==="3free"?'<span style="font-size:10px">💸</span>':''}
+        <span class="pscore" style="color:${isW?'#1e8449':isL?'#c0392b':'#2c3e50'}">${score}</span>
+      </div>`;
+    }).join("");
+
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <span class="badge ${g.mode==="3free"?"badge-3":"badge-4"}">${g.mode==="3free"?"Libre":"2v2"}</span>
+        <div style="font-size:12px;color:#7f8c8d;text-align:right">${ds}<br>${ts}</div>
+      </div>
+      ${teamTags}
+      <div>${rows}</div>
+      <div style="margin-top:10px;text-align:right">${delHtml}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderStats() {
+  const stats = getStats();
+  const active = Object.entries(stats).filter(([,s])=>s.played>0).sort((a,b)=>b[1].wins-a[1].wins);
+  if (active.length===0) return `<div class="card"><p class="empty">Juega alguna partida para ver estadísticas</p></div>`;
+  return active.map(([name,s]) => {
+    const wr = s.played>0 ? Math.round(s.wins/s.played*100) : 0;
+    const avg = s.played>0 ? Math.round(s.totalScore/s.played) : 0;
+    return `<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="stat-avatar" style="background:${PCOLORS[name]}">${name[0]}</div>
+        <div>
+          <div style="font-weight:700;font-size:16px">${name}</div>
+          <div style="font-size:12px;color:#7f8c8d">${s.played} partida${s.played!==1?'s':''}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:24px;font-weight:700;font-family:'Playfair Display',Georgia,serif;color:${PCOLORS[name]}">${wr}%</div>
+          <div style="font-size:10px;color:#7f8c8d">Victorias</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-around;text-align:center">
+        <div class="mini-stat"><div class="val" style="color:#1e8449">${s.wins}</div><div class="lbl">Victorias</div></div>
+        <div class="mini-stat"><div class="val" style="color:#c0392b">${s.losses}</div><div class="lbl">Derrotas</div></div>
+        <div class="mini-stat"><div class="val" style="color:#1a5276">${avg}</div><div class="lbl">Promedio</div></div>
+        <div class="mini-stat"><div class="val" style="color:#d4a017">${s.bestScore}</div><div class="lbl">Mejor</div></div>
+      </div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:${wr}%;background:linear-gradient(90deg,${PCOLORS[name]},${PCOLORS[name]}cc)"></div></div>
+    </div>`;
+  }).join("");
+}
+
+function renderPaletilla() {
+  const pal = getPaletilla();
+  const g3 = state.games.filter(x=>x.mode==="3free").length;
+  const sorted = [...PLAYERS_3].sort((a,b)=>(pal.pct[b]||0)-(pal.pct[a]||0));
+
+  let content;
+  if (g3===0) {
+    content = `<p class="empty">Jugad partidas de 3 para ver quién paga más</p>`;
+  } else {
+    content = sorted.map((name,i) => {
+      const p = pal.pct[name]||0, l = pal.losses[name]||0, pl = pal.played[name]||0;
+      const medal = i===0?"💸":(i===sorted.length-1&&l===0?"🎉":"");
+      const barColor = i===0 ? `linear-gradient(90deg,#c0392b,#c0392bcc)` : `linear-gradient(90deg,${PCOLORS[name]},${PCOLORS[name]}aa)`;
+      return `<div class="pal-player ${i===0?'top':'rest'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:7px;background:${PCOLORS[name]};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;font-family:'Playfair Display',Georgia,serif">${name[0]}</div>
+            <span style="font-weight:700;font-size:15px">${name}</span>
+            ${medal?`<span>${medal}</span>`:''}
+          </div>
+          <span style="font-size:24px;font-weight:700;font-family:'Playfair Display',Georgia,serif;color:${i===0?'#c0392b':'#2c3e50'}">${p}%</span>
+        </div>
+        <div style="font-size:12px;color:#7f8c8d;margin-bottom:6px">${l} derrota${l!==1?'s':''} de ${pl} partida${pl!==1?'s':''}</div>
+        <div class="pal-bar"><div class="pal-bar-fill" style="width:${p}%;background:${barColor}"></div></div>
+      </div>`;
+    }).join("");
+  }
+
+  let resetHtml = "";
+  if (g3 > 0) {
+    if (state.confirmReset) {
+      resetHtml = `<div class="card card-muted" style="text-align:center">
+        <p style="font-size:13px;color:#c0392b;font-weight:600;margin-bottom:10px">¿Borrar todas las partidas? No se puede deshacer.</p>
+        <button class="reset-btn reset-danger" data-action="reset-yes">Sí, borrar</button>
+        <button class="reset-btn reset-cancel" data-action="reset-no">No</button>
+      </div>`;
+    } else {
+      resetHtml = `<div class="card card-muted">
+        <p style="font-size:12px;color:#7f8c8d;margin-bottom:10px;text-align:center">Cuando compréis la paletilla, resetead el contador</p>
+        <button class="reset-btn reset-outline" data-action="reset-ask">Resetear todo</button>
+      </div>`;
+    }
+  }
+
+  return `
+    <div class="card">
+      <div style="text-align:center;margin-bottom:16px">
+        <span style="font-size:42px">🐷</span>
+        <h2 class="section-title" style="margin-bottom:4px;margin-top:4px">La Paletilla</h2>
+        <p style="font-size:12px;color:#7f8c8d">${g3} partida${g3!==1?'s':''} jugada${g3!==1?'s':''} · ${pal.total} derrota${pal.total!==1?'s':''} totales</p>
+      </div>
+      ${content}
+    </div>
+    ${resetHtml}`;
+}
+
+// ─── Event Binding ──────────────────────────────────────
+function bindEvents() {
+  // Nav
+  document.querySelectorAll("[data-nav]").forEach(btn => {
+    btn.onclick = () => setState({ view: btn.dataset.nav, newGame: null, confirmDelete: null, confirmReset: false });
+  });
+
+  // Mode selection
+  document.querySelectorAll("[data-mode]").forEach(btn => {
+    btn.onclick = () => {
+      const mode = btn.dataset.mode;
+      if (mode === "3free") {
+        setState({ newGame: { mode, scores:{Xose:"",Noelia:"",Pako:""}, date:new Date().toISOString() }});
+      } else {
+        setState({ newGame: { mode, team1:["Xose","Noelia"], team2:["Pako","Miguel"], scores:{Xose:"",Noelia:"",Pako:"",Miguel:""}, date:new Date().toISOString() }});
+      }
+    };
+  });
+
+  // Cancel new game
+  document.querySelector("[data-action='cancel-new']")?.addEventListener("click", () => setState({ newGame: null }));
+
+  // Score inputs
+  document.querySelectorAll("[data-player]").forEach(inp => {
+    inp.oninput = () => {
+      const g = {...state.newGame, scores:{...state.newGame.scores, [inp.dataset.player]: inp.value}};
+      state.newGame = g;
+      // Only re-enable/disable button without full re-render
+      const players = g.mode === "3free" ? PLAYERS_3 : PLAYERS_4;
+      const ok = players.every(p => g.scores[p]!==""&&!isNaN(Number(g.scores[p])));
+      const saveBtn = document.querySelector("[data-action='save-game']");
+      if (saveBtn) { saveBtn.className = "save-btn " + (ok?"ok":"disabled"); }
+    };
+  });
+
+  // Team swap
+  document.querySelectorAll("[data-swap]").forEach(btn => {
+    btn.onclick = () => {
+      const g = state.newGame;
+      const player = btn.dataset.swap;
+      const from = btn.dataset.from;
+      const to = from === "team1" ? "team2" : "team1";
+      const fromArr = g[from].filter(p=>p!==player);
+      const toArr = [...g[to], player];
+      if (fromArr.length >= 1 && toArr.length <= 2) {
+        setState({ newGame: {...g, [from]:fromArr, [to]:toArr} });
+      }
+    };
+  });
+
+  // Save game
+  document.querySelector("[data-action='save-game']")?.addEventListener("click", () => {
+    const g = state.newGame;
+    const players = g.mode === "3free" ? PLAYERS_3 : PLAYERS_4;
+    if (!players.every(p => g.scores[p]!==""&&!isNaN(Number(g.scores[p])))) return;
+    const finalScores = {};
+    players.forEach(p => { finalScores[p] = Number(g.scores[p]); });
+    const toSave = { mode:g.mode, scores:finalScores, date:g.date };
+    if (g.mode === "2v2") { toSave.team1 = g.team1; toSave.team2 = g.team2; }
+    saveGame(toSave);
+    setState({ newGame: null, view: "history" });
+  });
+
+  // Delete
+  document.querySelectorAll("[data-delask]").forEach(btn => {
+    btn.onclick = () => setState({ confirmDelete: btn.dataset.delask });
+  });
+  document.querySelectorAll("[data-delconfirm]").forEach(btn => {
+    btn.onclick = () => { deleteGame(btn.dataset.delconfirm); setState({ confirmDelete: null }); };
+  });
+  document.querySelectorAll("[data-delcancel]").forEach(btn => {
+    btn.onclick = () => setState({ confirmDelete: null });
+  });
+
+  // Reset
+  document.querySelector("[data-action='reset-ask']")?.addEventListener("click", () => setState({ confirmReset: true }));
+  document.querySelector("[data-action='reset-yes']")?.addEventListener("click", () => { resetAll(); setState({ confirmReset:false, view:"home" }); });
+  document.querySelector("[data-action='reset-no']")?.addEventListener("click", () => setState({ confirmReset: false }));
+}
+
+// ─── Initial Render ─────────────────────────────────────
+render();
+</script>
+</body>
+</html>
